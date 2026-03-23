@@ -1,121 +1,123 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback } from "react";
+import quotes, { type Quote } from "./data/quotes";
+import QuoteCard from "./components/QuoteCard";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const STORAGE_KEY = "daily-quote-last";
+const LOADING_DELAY = 400;
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function getRandomQuote(current: Quote | null): Quote {
+  if (quotes.length <= 1) return quotes[0];
+  let next: Quote;
+  do {
+    next = quotes[Math.floor(Math.random() * quotes.length)];
+  } while (next.text === current?.text);
+  return next;
 }
 
-export default App
+function loadSavedQuote(): Quote | null {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved) as Quote;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function saveQuote(quote: Quote): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(quote));
+  } catch {
+    // ignore
+  }
+}
+
+export default function App() {
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  // Load initial quote
+  useEffect(() => {
+    const saved = loadSavedQuote();
+    const initial = saved ?? getRandomQuote(null);
+    saveQuote(initial);
+
+    const timer = setTimeout(() => {
+      setQuote(initial);
+      setLoading(false);
+      setVisible(true);
+    }, LOADING_DELAY);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleNewQuote = useCallback(() => {
+    setVisible(false);
+    setLoading(true);
+    setCopied(false);
+
+    setTimeout(() => {
+      const next = getRandomQuote(quote);
+      setQuote(next);
+      saveQuote(next);
+      setLoading(false);
+      setVisible(true);
+    }, LOADING_DELAY);
+  }, [quote]);
+
+  const handleCopy = useCallback(async () => {
+    if (!quote) return;
+    const text = `"${quote.text}" — ${quote.author}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // fallback
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  }, [quote]);
+
+  return (
+    <main className="app-container">
+      <header className="app-header">
+        <p className="app-title">Daily Quote</p>
+      </header>
+
+      <QuoteCard quote={quote} visible={visible} loading={loading} />
+
+      <div className="app-actions">
+        <button
+          id="new-quote-btn"
+          className="btn btn-primary"
+          onClick={handleNewQuote}
+          disabled={loading}
+        >
+          New Quote
+        </button>
+        <button
+          id="copy-quote-btn"
+          className={`btn btn-secondary ${copied ? "btn-copied" : ""}`}
+          onClick={handleCopy}
+          disabled={!quote || loading}
+        >
+          {copied ? "Copied!" : "Copy Quote"}
+        </button>
+      </div>
+
+      <footer className="app-footer">
+        <p className="app-footer-text">A quiet moment of inspiration</p>
+      </footer>
+    </main>
+  );
+}

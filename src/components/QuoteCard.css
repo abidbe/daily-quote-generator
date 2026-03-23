@@ -1,0 +1,92 @@
+.quote-card {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2rem;
+}
+
+.quote-content {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  text-align: center;
+}
+
+.quote-content.fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.quote-content.fade-out {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.quote-text {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.75;
+  color: var(--color-text);
+  margin: 0 0 1.25rem 0;
+  letter-spacing: 0.01em;
+}
+
+.quote-author {
+  display: block;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-style: normal;
+  color: var(--color-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Loader dots */
+.quote-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 2rem 0;
+}
+
+.quote-loader .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-muted);
+  animation: dotPulse 1s ease-in-out infinite;
+}
+
+.quote-loader .dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.quote-loader .dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .quote-card {
+    padding: 2rem 1.25rem;
+    min-height: 160px;
+  }
+
+  .quote-text {
+    font-size: 1.15rem;
+    line-height: 1.7;
+  }
+}
